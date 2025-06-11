@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify, render_template, os
+import os
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from validador import validar_xml
 
