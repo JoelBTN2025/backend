@@ -73,10 +73,13 @@ def validar_xml(xml_string, tipo=None, corregir=False):
             else:
                 raise
 
-        # 2. Detectar versión UBL (2.0, 2.1, etc.)
+       # Detectar versión 2.0 o 2.1
         version = extraer_version(xml_doc)
         if not version:
             return False, "No se pudo detectar la versión del XML (falta <cbc:UBLVersionID>)", None
+
+        # Para UBL 2.0, los archivos XSD usan 1.0 en su nombre
+        xsd_version = "1.0" if version == "2.0" else version
 
 
         # 3. Obtener tag raíz sin namespace
