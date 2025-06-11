@@ -4,7 +4,7 @@ from flask_cors import CORS
 from validador import validar_xml
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})  # Permite todas las rutas desde cualquier origen
 
 # Ruta API para validación JSON
 @app.route('/validar', methods=['POST'])
