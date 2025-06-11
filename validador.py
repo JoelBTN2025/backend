@@ -60,9 +60,9 @@ def extraer_version(xml_doc):
             return elem_version.text.strip()
     return None
 
-def validar_xml(xml_string, tipo, corregir=False):
+def validar_xml(xml_string, tipo=None, corregir=False):
     try:
-        # Parseo inicial del XML
+        # 1. Parsear XML con o sin recuperación
         try:
             xml_doc = etree.fromstring(xml_string.encode('utf-8'))
         except etree.XMLSyntaxError:
@@ -73,26 +73,29 @@ def validar_xml(xml_string, tipo, corregir=False):
             else:
                 raise
 
+        # 2. Detectar versión UBL (2.0, 2.1, etc.)
         version = extraer_version(xml_doc)
-        if version not in ['2.0', '2.1']:
-            version = '2.1'
+        if not version:
+            return False, "No se pudo detectar la versión del XML (falta <cbc:UBLVersionID>)", None
 
+
+        # 3. Obtener tag raíz sin namespace
+        tag_completo = xml_doc.tag  # ej: '{urn:oasis:names:specification:ubl:schema:xsd:Invoice-2}Invoice'
+        nombre_tag = tag_completo.split('}')[-1].strip()  # ej: 'Invoice'
+
+        # 4. Armar nombre dinámico del archivo XSD
+        archivo_xsd = f"UBL-{nombre_tag}-{version}.xsd"
+
+        # 5. Ruta base a esquema
         script_dir = os.path.dirname(os.path.abspath(__file__))
         base_path = os.path.join(script_dir, "esquemas", version)
-
-        root_tag = xml_doc.tag.lower()
-        if 'invoice' in root_tag:
-            archivo_xsd = "UBL-Invoice-2.1.xsd"
-        elif 'creditnote' in root_tag:
-            archivo_xsd = "UBL-CreditNote-2.1.xsd"
-        elif 'debitnote' in root_tag:
-            archivo_xsd = "UBL-DebitNote-2.1.xsd"
-        elif 'despatchadvice' in root_tag:
-            archivo_xsd = "UBL-DespatchAdvice-2.1.xsd"
-        else:
-            return False, f"No se pudo identificar el tipo de comprobante a partir del tag raíz: {root_tag}"
-
         xsd_path = os.path.join(base_path, "maindoc", archivo_xsd)
+
+        # 6. Verificar que el archivo exista
+        if not os.path.exists(xsd_path):
+            return False, f"No se encontró el esquema XSD para {nombre_tag} versión {version}: {xsd_path}", None
+
+        # 7. Preparar parser con resolvers para archivos locales
         parser = etree.XMLParser(load_dtd=True, no_network=False)
 
         class LocalResolver(etree.Resolver):
@@ -102,10 +105,12 @@ def validar_xml(xml_string, tipo, corregir=False):
 
         parser.resolvers.add(LocalResolver())
 
+        # 8. Cargar esquema
         with open(xsd_path, 'rb') as f:
             schema_doc = etree.parse(f, parser)
             schema = etree.XMLSchema(schema_doc)
 
+        # 9. Validar el XML
         schema.assertValid(xml_doc)
 
         return True, "✅ XML válido y conforme al esquema XSD.", xml_string
