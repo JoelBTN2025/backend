@@ -2,12 +2,12 @@ import os
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from validador import validar_xml
-from utils.sunat_service import enviar_a_sunat  # ✅ Importamos el nuevo módulo
+from utils.sunat_service import enviar_a_sunat  #Importamos el nuevo módulo
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# ✅ Validación estructural XML
+#Validación estructural XML
 @app.route('/validar', methods=['POST'])
 def validar():
     try:
@@ -33,7 +33,7 @@ def validar():
             "error": f"Error interno del servidor: {str(e)}"
         })
 
-# ✅ Nueva ruta para enviar ZIP firmado a SUNAT (modo pruebas)
+#Nueva ruta para enviar ZIP firmado a SUNAT (modo pruebas)
 @app.route('/enviar-sunat', methods=['POST'])
 def enviar_sunat():
     try:
